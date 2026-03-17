@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>杨原奇筋问诊台 - 宏医五骨经筋</title>
+    <style>
+        :root {
+            --primary-bg: #f7f4ed;
+            --container-bg: #ffffff;
+            --text-main: #2c2a29;
+            --text-light: #7a7369;
+            --border-color: #e2dcd0;
+            --accent-color: #5c6350;
+            --accent-hover: #4a5040;
+            --danger-color: #8a3a33;
+            --yin-color: #4a6fa5;
+            --yang-color: #c05a2b;
+            --ping-color: #6b8e23;
+            --pulse-color: #3b5998;
+            --body-color: #8b5a2b;
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "FangSong", "仿宋", "STFangsong", "楷体", "KaiTi", serif;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 950px; margin: 30px auto; background: var(--container-bg);
+            padding: 30px 40px; border-radius: 12px; box-shadow: var(--shadow-md);
+        }
+
+        .header-title {
+            text-align: center; font-size: 2.2rem; color: var(--danger-color);
+            margin-bottom: 5px; letter-spacing: 3px; font-weight: bold;
+        }
+
+        .subtitle {
+            text-align: center; font-size: 1.1rem; color: var(--accent-color);
+            margin-bottom: 35px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.5rem; color: var(--accent-color); margin: 40px 0 20px;
+            display: flex; align-items: center; font-weight: bold;
+            border-bottom: 2px solid var(--border-color); padding-bottom: 10px;
+        }
+        .section-title::before {
+            content: ''; display: inline-block; width: 5px; height: 22px;
+            background-color: var(--danger-color); margin-right: 12px; border-radius: 2px;
+        }
+
+        /* 诊断双栏布局 */
+        .diag-wrapper { display: flex; flex-wrap: wrap; gap: 20px; }
+        .diag-card { flex: 1; min-width: 320px; background: #faf8f5; padding: 25px; border-radius: 10px; border: 1px solid var(--border-color); }
+        .diag-card-title { font-size: 1.25rem; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; }
+        .pulse-title { color: var(--pulse-color); }
+        .body-title { color: var(--body-color); }
+
+        .form-control { margin-bottom: 15px; display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 8px; color: var(--text-light); font-size: 1rem; }
+        select { padding: 12px; font-size: 1.05rem; border: 1px solid #d4cfc4; border-radius: 6px; outline: none; width: 100%; }
+        select:focus { border-color: var(--danger-color); }
+
+        button.btn-diag { color: white; border: none; padding: 12px; font-size: 1.1rem; border-radius: 6px; cursor: pointer; width: 100%; letter-spacing: 2px; transition: all 0.3s; margin-top: 5px; font-weight: bold; }
+        button.btn-pulse { background-color: var(--pulse-color); }
+        button.btn-pulse:hover { background-color: #2d4577; transform: translateY(-2px); }
+        button.btn-body { background-color: var(--body-color); }
+        button.btn-body:hover { background-color: #6a4421; transform: translateY(-2px); }
+
+        .result-box { margin-top: 20px; padding: 20px; border-radius: 8px; display: none; font-size: 1.05rem; }
+        .result-pulse { background-color: #f0f4f8; border-left: 4px solid var(--pulse-color); }
+        .result-body { background-color: #fffaf0; border-left: 4px solid var(--body-color); }
+
+        /* 折叠手风琴 */
+        .accordion-container { border: 1px solid var(--border-color); border-radius: 8px; background: #fff; overflow: hidden; margin-bottom: 15px; }
+        .accordion-item { border-bottom: 1px solid var(--border-color); }
+        .accordion-item:last-child { border-bottom: none; }
+        .accordion-header { width: 100%; text-align: left; padding: 16px 20px; background-color: #fff; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 1.15rem; font-weight: bold; color: var(--text-main); transition: 0.3s; }
+        .accordion-header:hover { background-color: #faf9f6; }
+        .accordion-header.active { background-color: #f7f4ed; color: var(--danger-color); }
+        .pulse-theme .accordion-header.active { background-color: #f0f4f8; color: var(--pulse-color); }
+        
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .tag { padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; color: white; }
+        .tag.yin { background-color: var(--yin-color); } .tag.yang { background-color: var(--yang-color); } .tag.ping { background-color: var(--ping-color); }
+        .tag.left-hand { background-color: #a44a4a; } .tag.right-hand { background-color: #4a7c59; }
+
+        .icon-toggle { font-size: 1.5rem; color: var(--text-light); transition: transform 0.3s; }
+        .accordion-header.active .icon-toggle { transform: rotate(45deg); color: var(--danger-color); }
+        .pulse-theme .accordion-header.active .icon-toggle { color: var(--pulse-color); }
+
+        /* 解决折叠内容图片截断的核心代码 */
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; background-color: #faf9f6; }
+        .pulse-theme .accordion-content { background-color: #fdfdfd; }
+        .content-inner { padding: 0 20px 20px 20px; }
+
+        /* ====== 图谱图片专属样式 ====== */
+        /* 1. 脉诊大图：自适应高度，绝不裁切 */
+        .pulse-img-wrapper {
+            width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); 
+            margin: 15px 0; background: #fff; cursor: pointer; text-align: center;
+        }
+        .pulse-img-wrapper img { width: 100%; height: auto; display: block; }
+        .pulse-img-wrapper:hover { border-color: var(--pulse-color); box-shadow: 0 4px 15px rgba(59,89,152,0.2); }
+
+        /* 2. 身体局部小图网格 */
+        .img-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 15px 0; }
+        .img-wrapper { border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; background: #e9e4d8; text-align: center; display: flex; flex-direction: column; cursor: pointer; transition: 0.3s; position: relative; }
+        .img-wrapper:hover { transform: translateY(-5px); border-color: var(--danger-color); }
+        .img-wrapper img { width: 100%; height: 250px; object-fit: cover; display: block; }
+        .img-caption { font-size: 0.95rem; color: var(--danger-color); padding: 10px; font-weight: bold; background: #fff; border-top: 1px solid var(--border-color); }
+
+        /* 信息行样式 */
+        .info-row { margin-bottom: 10px; line-height: 1.7; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-weight: bold; color: var(--accent-color); }
+        .pulse-theme .info-label { color: var(--pulse-color); }
+
+        /* 强调框 */
+        .pulse-box { background: linear-gradient(135deg, #f0f4f8 0%, #e1e8f0 100%); border: 1px solid #c8d4e0; padding: 18px; border-radius: 8px; margin-bottom: 20px; color: var(--pulse-color); }
+        .highlight-box { background: linear-gradient(135deg, #f5f7f2 0%, #e9efe5 100%); border: 1px solid #c9d6c3; padding: 18px; border-radius: 8px; margin-bottom: 20px; color: var(--accent-hover); }
+
+        /* 弹窗 (Modal) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 20px; }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content { background: #fff; width: 100%; max-width: 600px; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transform: translateY(20px); transition: 0.3s; max-height: 90vh; }
+        .modal-overlay.show .modal-content { transform: translateY(0); }
+        .modal-header { padding: 15px 20px; background: var(--danger-color); color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 1.3rem; font-weight: bold; }
+        .modal-close { cursor: pointer; font-size: 1.8rem; line-height: 1; }
+        .modal-body { overflow-y: auto; padding: 20px; }
+        .modal-image { width: 100%; border-radius: 6px; margin-bottom: 20px; border: 1px solid #eee; height: auto; }
+        .modal-desc-box { background: #faf8f5; border-left: 4px solid var(--accent-color); padding: 15px; border-radius: 0 6px 6px 0; }
+        .modal-desc-box p { margin-bottom: 10px; line-height: 1.6; }
+        .modal-label { font-weight: bold; color: var(--danger-color); }
+
+        .wisdom-wrapper { margin-top: 40px; text-align: center; }
+        .wisdom-icon { font-size: 24px; margin-bottom: -15px; color: var(--danger-color); }
+        .wisdom-box { padding: 30px 20px 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); font-style: italic; color: var(--accent-hover); font-size: 1.1rem; }
+
+        @media (max-width: 600px) { .container { padding: 20px; margin: 15px; } .diag-card { min-width: 100%; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-title">杨原奇筋问诊台</div>
+    <div class="subtitle">先诊脉定大局，后触局部寻病灶</div>
+
+    <!-- 第一部分：诊断系统 -->
+    <section>
+        <h2 class="section-title">一、摸筋触诊辨证系统</h2>
+        <div class="diag-wrapper">
+            <!-- 左栏：手上脉诊 -->
+            <div class="diag-card">
+                <div class="diag-card-title pulse-title">🖐️ 宏医脉诊 (手上)</div>
+                <div class="form-control">
+                    <label>触诊脉位：</label>
+                    <select id="pulsePart">
+                        <option value="">-- 请选择手腕脉位 --</option>
+                        <option value="左手中线">左手中线 (心/胃)</option>
+                        <option value="左手尺侧">左手尺侧 (胆/坐骨神经)</option>
+                        <option value="右手桡侧">右手桡侧 (脾/肾)</option>
+                        <option value="右手尺侧">右手尺侧 (肠经/生殖膀胱)</option>
+                        <option value="左手桡侧">左手桡侧 (肠/肺/胰)</option>
+                        <option value="右手中线">右手中线 (肝)</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label>指下筋象：</label>
+                    <select id="pulseSensation">
+                        <option value="">-- 请选择手感 --</option>
+                        <option value="僵硬">僵硬板结 (主瘀堵/紧张/急躁)</option>
+                        <option value="黏软">黏稠绵软 (主热毒/虚火/炎症)</option>
+                        <option value="空虚">空虚塌陷 (主亏虚/机能弱)</option>
+                        <option value="气泡">小气泡感 (主气血不固/虚散)</option>
+                        <option value="颗粒">沙粒/颗粒 (主惊吓/结石/郁结)</option>
+                    </select>
+                </div>
+                <button class="btn-diag btn-pulse" onclick="diagnosePulse()">脉象辨证</button>
+                <div id="resPulse" class="result-box result-pulse"></div>
+            </div>
+
+            <!-- 右栏：身体触诊 -->
+            <div class="diag-card">
+                <div class="diag-card-title body-title">🧍‍♂️ 局部触诊 (身上)</div>
+                <div class="form-control">
+                    <label>触诊部位：</label>
+                    <select id="bodyPart">
+                        <option value="">-- 请选择身体部位 --</option>
+                        <option value="腹部冲脉">腹部冲脉/气交 (主中气)</option>
+                        <option value="腰骶气口">腰骶/腰眼区 (主元气/八髎)</option>
+                        <option value="颈肩区域">颈肩/锁骨窝/前后心经</option>
+                        <option value="左头两侧">左头两侧 (血脉/脑神经)</option>
+                        <option value="膝关节腘窝">膝关节/腘窝后环</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label>指下筋象：</label>
+                    <select id="bodySensation">
+                        <option value="">-- 请选择手感 --</option>
+                        <option value="僵硬">僵硬板结 (慢性劳损/气滞死结)</option>
+                        <option value="黏软">黏稠绵软 (无菌炎症/骨膜炎)</option>
+                        <option value="空虚">空虚塌陷 (肌肉萎缩/气血不达)</option>
+                        <option value="气泡">小气泡感 (气不固摄/虚气游离)</option>
+                        <option value="颗粒">沙粒/钙化 (骨膜钙化/蜘蛛腿)</option>
+                    </select>
+                </div>
+                <button class="btn-diag btn-body" onclick="diagnoseBody()">局部辨证</button>
+                <div id="resBody" class="result-box result-body"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第二部分：宏医全息脉诊 -->
+    <section>
+        <h2 class="section-title" style="color:var(--pulse-color); border-bottom-color:var(--pulse-color);">二、宏医全息脉诊深度解析</h2>
+        
+        <div class="pulse-box">
+            <strong>🖐️ 脉诊总诀与心法</strong><br>
+            • “摸脉是内观，是神与神的对话。用药看脉象，看症状是西医思维。”<br>
+            • <b>大局观：</b>左手主血、主心脾胃；右手主气、主肝胆肾。<br>
+            • <b>手法轻重：</b>人病重身体虚，速度放慢手法减轻；病越重手越轻。<br>
+            • <b>指下预警：</b>手热，脾胃不好；左手血压高，右手血压低。
+        </div>
+
+        <div class="accordion-container pulse-theme">
+            
+            <!-- 1. 全息大图 (默认打开展示) -->
+            <div class="accordion-item">
+                <button class="accordion-header active">
+                    <div class="header-left">脉诊定位全息图 <span class="tag yin" style="background:#3b5998;">点击放大</span></div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content" style="max-height: 3000px;">
+                    <div class="content-inner">
+                        <div class="pulse-img-wrapper" onclick="openModal('pulse')">
+                            <!-- 确保图片完整显示不被裁切 -->
+                            <img src="images/pulse.jpg" alt="[脉诊双臂图 - 请将pulse.jpg放于images文件夹下]">
+                            <div style="padding:10px; font-weight:bold; color:var(--pulse-color); border-top:1px dashed #ccc;">🔍 宏医双臂脉诊定位全息图（点击查阅解析）</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 脉功心法 -->
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">脉功练习法 (初式) <span class="tag ping" style="background:#8b7355;">内观</span></div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner" style="padding-top:15px;">
+                        <p style="color:var(--text-main); font-style:italic; background:#fff; padding:15px; border-left:4px solid var(--pulse-color);">
+                            “行走时，两手自然下垂，步履轻松稳定。将心意轻落于双手，静观手指的跳动感，感知那一条自上而下，由手臂至指尖的‘神脉’。无需强求，只是如实觉察那里的微动、跳动、热流、麻感等。<br>
+                            步行片刻后，可平躺放松，双手自然摊放，掌心向上。再一次观照手上的神脉—是跳动？是发麻？是温热？或是气感如泉流？此为观脉入门，动静交融，气随意走，脉随心应。”
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 左手辨证 -->
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">左手脉位与指下辨证 <span class="tag left-hand">左主心胃</span></div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner" style="padding-top:15px;">
+                        <div class="info-row"><span class="info-label">📍 中线 (头➔咽➔心➔胃)：</span><br>
+                            <b>【心筋】</b>僵硬(暴躁压抑)；黏软(心火/焦虑)；胀满(抑郁症/思虑过度)；碎颗粒(心梗预警)。<br>
+                            <i>* 秘诀：心筋在肺位置有小凹陷是三尖瓣问题，在胃位置凹陷是二尖瓣问题。</i><br>
+                            <b>【胃筋】</b>与心筋连成一条，僵硬属耿直不服输；下方有结节属气食两积。
+                        </div>
+                        <div class="info-row"><span class="info-label">📍 桡侧 (颈➔肠➔肺➔胰)：</span>肺区有结节警惕乳腺/肺部结节。</div>
+                        <div class="info-row"><span class="info-label">📍 尺侧 (颈➔胆➔股骨筋)：</span>左手尺侧下方对应股骨筋，即左坐骨神经的反射区。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 右手辨证 -->
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">右手脉位与指下辨证 <span class="tag right-hand">右主肝胆</span></div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner" style="padding-top:15px;">
+                        <div class="info-row"><span class="info-label">📍 中线 (头➔咽➔肝)：</span><br>
+                            <b>【肝筋】</b>僵硬属肝气郁结；滑腻属脂肪肝；咽喉部空虚属中气不足(咽痒)，有竖节属甲状腺。
+                        </div>
+                        <div class="info-row"><span class="info-label">📍 尺侧 (颈➔沉积脉/胆➔肠经)：</span><br>
+                            <b>【胆筋(沉积脉)】</b>“胆主神”。僵硬(小时候受惊吓/胆小)；黏软(胆火旺/烦躁)；空虚(神不守舍/失眠)。<br>
+                            <i>* 秘诀：若有一根硬杠子直接搭到心筋上，此人“心术不正”，心思多。</i><br>
+                            <b>【肠经】</b>尺侧上方僵硬对应肠胃伤腰、右侧坐骨神经。
+                        </div>
+                        <div class="info-row"><span class="info-label">📍 桡侧 (颈➔脾➔肾)：</span>右下空虚为膀胱无力(尿等待)；碎颗粒警惕肾积水/囊肿。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. 头部辨证 -->
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">头部脉象辅助辨证 <span class="tag ping" style="background:#5c6350;">脑神经</span></div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner" style="padding-top:15px;">
+                        <div class="info-row"><span class="info-label">🧠 左头两侧：</span><br>
+                        • <b>黏软隆起：</b>血脉压强，高血压预警。<br>
+                        • <b>低陷空虚：</b>缺血，低血压，小脑供血不足（记忆力下降）。<br>
+                        • <b>硬结：</b>脑神经高度紧张。<br>
+                        • <b>细丝且硬：</b>骨上细丝硬属脑神经受损。</div>
+                        <div class="info-row"><span class="info-label">👁️ 右头骨下：</span><br>
+                        • <b>右下结节：</b>对应面部抽动（如眼皮抽动）。<br>
+                        • <b>边缘黏软：</b>淋巴火大；小颗粒属淋巴结。</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 第三部分：奇经八脉 -->
+    <section>
+        <h2 class="section-title">三、宏医奇经八脉图解 (全身大脉)</h2>
+        <div style="color: var(--text-light); margin-bottom: 15px;">👉 提示：点击任意图片可查看<b>详细定位与功效</b>。</div>
+        
+        <div class="accordion-container">
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">五大主脉 (营/壮/冲/关/条索)</div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner">
+                        <div class="img-grid">
+                            <div class="img-wrapper" onclick="openModal('yingmai')"><img src="images/yingmai.jpg" alt="营脉"><div class="img-caption">营脉 (左脾右肝)</div></div>
+                            <div class="img-wrapper" onclick="openModal('zhuangmai')"><img src="images/zhuangmai.jpg" alt="壮脉"><div class="img-caption">壮脉 (督脉两旁)</div></div>
+                            <div class="img-wrapper" onclick="openModal('chongmai')"><img src="images/chongmai.jpg" alt="冲脉"><div class="img-caption">冲脉 (心肺大脉)</div></div>
+                            <div class="img-wrapper" onclick="openModal('guanmai')"><img src="images/guanmai.jpg" alt="关脉"><div class="img-caption">关脉 (内脏放射)</div></div>
+                            <div class="img-wrapper" onclick="openModal('tiaosuomai')"><img src="images/tiaosuomai.jpg" alt="条索脉"><div class="img-caption">条索脉 (主三焦)</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">下焦三脉 (带/环/股沟)</div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner">
+                        <div class="img-grid">
+                            <div class="img-wrapper" onclick="openModal('daimai')"><img src="images/daimai.jpg" alt="带脉"><div class="img-caption">带脉 (绕腰一圈)</div></div>
+                            <div class="img-wrapper" onclick="openModal('huanmai')"><img src="images/huanmai.jpg" alt="环脉"><div class="img-caption">环脉 (主生殖泌尿)</div></div>
+                            <div class="img-wrapper" onclick="openModal('gugoumai')"><img src="images/gugoumai.jpg" alt="股沟脉"><div class="img-caption">股沟脉 (元气通道)</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第四部分：局部精细解剖 -->
+    <section>
+        <h2 class="section-title">四、局部精细解剖图解 (寻病灶)</h2>
+        <div class="highlight-box">
+            <strong>⚡ 核心法门：五骨寻筋</strong><br>
+            病多藏于犄角旮旯。出手如钩，回手如挂。在骨边、骨角、骨凸、骨凹、骨缝处寻细微之毫筋，一拨即通。
+        </div>
+
+        <div class="accordion-container">
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">腰骶、臀部与气口 (下焦痛源)</div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner">
+                        <div class="img-grid">
+                            <div class="img-wrapper" onclick="openModal('qikou')"><img src="images/qikou.jpg" alt="气口"><div class="img-caption">气口/腰眼位置</div></div>
+                            <div class="img-wrapper" onclick="openModal('yaoyan')"><img src="images/yaoyan.jpg" alt="四眼线"><div class="img-caption">上下内外眼线</div></div>
+                            <div class="img-wrapper" onclick="openModal('changjing')"><img src="images/changjing.jpg" alt="肠经"><div class="img-caption">肠经与八髎</div></div>
+                            <div class="img-wrapper" onclick="openModal('gugujin')"><img src="images/gugujin.jpg" alt="股骨筋"><div class="img-caption">股骨筋</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">头部与颈项区 (神明之府)</div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner">
+                        <div class="img-grid">
+                            <div class="img-wrapper" onclick="openModal('head_top')"><img src="images/head_top.jpg" alt="头顶"><div class="img-caption">人字脉/界隔脉</div></div>
+                            <div class="img-wrapper" onclick="openModal('head_side')"><img src="images/head_side.jpg" alt="侧脑"><div class="img-caption">侧脑四区</div></div>
+                            <div class="img-wrapper" onclick="openModal('neck_back')"><img src="images/neck_back.jpg" alt="颈后"><div class="img-caption">颈后五经/腧窝</div></div>
+                            <div class="img-wrapper" onclick="openModal('neck_side')"><img src="images/neck_side.jpg" alt="侧颈"><div class="img-caption">肾阳经</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">膝关节与腿部 (大循环枢纽)</div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner">
+                        <div class="img-grid">
+                            <div class="img-wrapper" onclick="openModal('knee_front')"><img src="images/knee_front.jpg" alt="膝正面"><div class="img-caption">寸节/上突/膝眼</div></div>
+                            <div class="img-wrapper" onclick="openModal('knee_inner')"><img src="images/knee_inner.jpg" alt="膝内侧"><div class="img-caption">众丛/地机</div></div>
+                            <div class="img-wrapper" onclick="openModal('knee_outer')"><img src="images/knee_outer.jpg" alt="膝外侧"><div class="img-caption">外谐通</div></div>
+                            <div class="img-wrapper" onclick="openModal('knee_back')"><img src="images/knee_back.jpg" alt="后腘窝"><div class="img-caption">后环(腘窝)</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <button class="accordion-header">
+                    <div class="header-left">臂部三环与心肺经</div>
+                    <span class="icon-toggle">+</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="content-inner">
+                        <div class="img-grid">
+                            <div class="img-wrapper" onclick="openModal('arm_upper')"><img src="images/arm_upper.jpg" alt="上环"><div class="img-caption">上环 (锁骨窝)</div></div>
+                            <div class="img-wrapper" onclick="openModal('arm_lower')"><img src="images/arm_lower.jpg" alt="中下环"><div class="img-caption">中下环 (心肺三经)</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 底部心法 -->
+    <div class="wisdom-wrapper">
+        <div class="wisdom-icon">❦</div>
+        <div class="wisdom-box">
+            <span id="wisdomText"></span>
+        </div>
+    </div>
+</div>
+
+<!-- ================= 弹窗结构 (Modal) ================= -->
+<div class="modal-overlay" id="imageModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">部位名称</div>
+            <div class="modal-close" onclick="closeModal()">&times;</div>
+        </div>
+        <div class="modal-body">
+            <img src="" alt="" id="modalImg" class="modal-image">
+            <div class="modal-desc-box">
+                <p><span class="modal-label">📍 准确取位：</span><br><span id="modalLocation"></span></p>
+                <p><span class="modal-label">🛡️ 主治功效：</span><br><span id="modalEfficacy"></span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== 1. 诊断系统逻辑 =====
+    const pulseData = {
+        "左手中线": {"僵硬": "【心/胃】神经紧张，心情压抑。整条笔直僵硬属脾气暴躁；下方胃筋僵硬属性格不服输。", "黏软": "【心/胃】心火旺盛，焦虑不稳。伴杂乱小筋结多发心脏官能症。", "空虚": "【心/胃】心气不足，胸闷气短。胃区下陷属蠕动差。", "气泡": "【心/胃】虚气游离，心肺供血严重不足。", "颗粒": "【心/胃】伴碎玻璃感警惕心梗；点状颗粒需舒缓心结。"},
+        "左手尺侧": {"僵硬": "【胆/左坐骨】受惊吓所致。僵硬造成胆小怕事、防御过度。", "黏软": "【胆】胆火旺盛。表现为心烦意乱、口苦厌食。", "空虚": "【胆】神魂不固，头脑混乱、失眠多梦。", "气泡": "【胆】胆气散乱，极易惊跳。", "颗粒": "【胆】胆结石或囊肿预警，情绪死结。"},
+        "右手桡侧": {"僵硬": "【脾/肾】脾胃失和，或肾气受惊扰处于紧绷状态。", "黏软": "【肾】肾火旺，排毒不畅。", "空虚": "【肾】右下空虚为膀胱无力、小便无力。", "气泡": "【肾】肾气不固。", "颗粒": "【肾】警惕肾积水、结石或局部囊肿。"},
+        "右手尺侧": {"僵硬": "【右肠/右坐骨】若上方僵硬，多为肠胃伤腰或坐骨痛反射。", "黏软": "【肠经】肠道湿热毒火。", "空虚": "【肠经】大肠运化无力。", "气泡": "【肠经】大便乏力。", "颗粒": "【生殖】警惕卵巢/膀胱区结节。"},
+        "左手桡侧": {"僵硬": "【肠/肺】大肠运化阻滞或肺气郁结。", "黏软": "【肺】肺热或炎症。", "空虚": "【肺】肺气虚弱，容易感冒。", "气泡": "【肺】中气虚。", "颗粒": "【肺】肺部结节或淋巴问题。"},
+        "右手中线": {"僵硬": "【肝】肝气郁结，多怒伤肝。", "黏软": "【肝】肝火旺盛，滑腻感为脂肪肝。", "空虚": "【肝】肝血不足，易疲倦。", "气泡": "【肝】肝气虚弱。", "颗粒": "【肝】肝脏实质性郁结。"}
+    };
+
+    const bodyData = {
+        "腹部冲脉": {"僵硬": "食积/气积（二鬼把门）。多是生气后吃饭所致。", "黏软": "胃肠急躁之火伤及筋膜，易发炎症。", "空虚": "中气极虚，脾不统气。吃点就饱，腹部塌陷。", "气泡": "气不固摄，中气下陷。伴随大便乏力。", "颗粒": "肠胃息肉或深层结节，需改变不良饮食。"},
+        "腰骶气口": {"僵硬": "气脉瘀堵，60%是“胃肠伤腰”。中气不足导致气口闭塞。", "黏软": "毒火侵蚀八髎，或下焦有炎症。", "空虚": "肾元之气亏损。臀部松弛塌陷、寒冷难耐。", "气泡": "元气极亏。肾阳虚弱，肛门有下坠感。", "颗粒": "八髎间有钙化疙瘩，酒足饭饱伤及经脉。"},
+        "颈肩区域": {"僵硬": "慢性劳损。若伴胸闷，为气伤“假性肩周炎”。", "黏软": "毒火伤筋或腋下淋巴肿大。切忌硬按肩膀。", "空虚": "气血不达，脖子支撑无力。", "气泡": "颈部筋膜层严重失养。宜引血上行。", "颗粒": "颈部左侧横向钙化硬结，需轻柔剥开。"},
+        "左头两侧": {"僵硬": "脑神经极度紧张。思虑过度导致防线紧绷。", "黏软": "血脉压强高（高血压）。脑血管有热毒。", "空虚": "缺血，血压偏低。小脑供血不足。", "气泡": "虚气上浮。引起头脑空虚感、眩晕。", "颗粒": "脑神经严重受损，或深层血管郁结。"},
+        "膝关节腘窝": {"僵硬": "营脉大循环阻滞。上下气血不通。", "黏软": "滑膜炎、积液，软骨退化发炎。", "空虚": "膝盖缺血缺润滑液，发冷酸软。", "气泡": "关节囊虚散，漏风怕冷。", "颗粒": "骨刺（骨膜上的钙化筋节），可拨开。"}
+    };
+
+    function diagnosePulse() {
+        const part = document.getElementById('pulsePart').value;
+        const sensation = document.getElementById('pulseSensation').value;
+        if (!part || !sensation) { alert("请选择脉位与手感！"); return; }
+        
+        let desc = pulseData[part][sensation] || "暂无此组合解析。";
+        document.getElementById('resPulse').innerHTML = `<strong>【脉象解析】</strong><br>${desc}`;
+        document.getElementById('resPulse').style.display = "block";
+        refreshWisdom();
+    }
+
+    function diagnoseBody() {
+        const part = document.getElementById('bodyPart').value;
+        const sensation = document.getElementById('bodySensation').value;
+        if (!part || !sensation) { alert("请选择身体部位与手感！"); return; }
+        
+        let desc = bodyData[part][sensation] || "暂无此组合解析。";
+        let action = sensation === '僵硬' ? "遇硬不可硬来！在病筋外围找缝隙用沉力消冰。" :
+                     sensation === '黏软' ? "毒火伤筋，宜用飘手棉手轻轻挂拨，嘱患者戒大鱼大肉。" :
+                     sensation === '空虚' ? "以通为补！大面积贴合匀速缓慢，言语激发康复本能。" :
+                     sensation === '气泡' ? "切忌重刮重压！棉手轻柔回填，嘱患者练托底功。" : "结节是求生区。存招安之心，从周围疏通血运带走垃圾。";
+
+        document.getElementById('resBody').innerHTML = `<strong>【局部辨证】</strong><br>${desc}<br><br><strong>【调理心法】</strong><br>${action}`;
+        document.getElementById('resBody').style.display = "block";
+        refreshWisdom();
+    }
+
+    // ===== 2. 折叠面板逻辑 =====
+    document.querySelectorAll('.accordion-header').forEach(acc => {
+        acc.addEventListener('click', function() {
+            const content = this.parentElement.querySelector('.accordion-content');
+            if (this.classList.contains('active')) {
+                this.classList.remove('active');
+                content.style.maxHeight = null;
+            } else {
+                this.parentElement.parentElement.querySelectorAll('.accordion-header').forEach(o => {
+                    o.classList.remove('active');
+                    o.parentElement.querySelector('.accordion-content').style.maxHeight = null;
+                });
+                this.classList.add('active');
+                // 设为一个极大值以适应内部图片高度，由css transition处理动画
+                content.style.maxHeight = "5000px"; 
+            }
+        });
+    });
+
+    // 默认展开脉诊全息大图
+    document.querySelector('.pulse-theme .accordion-header').click();
+
+    // ===== 3. 图片弹窗 (Modal) 数据与逻辑 =====
+    const modalData = {
+        "pulse": { title: "宏医脉诊全息定位", loc: "左手主血主心脾胃，右手主气主肝胆肾；从腕横纹自下而上循按。", eff: "直断脏腑病源与患者性格。指下现僵硬属气滞郁结/劳损，黏软属虚火炎症，空虚属气血不达，气泡属气虚游离，颗粒属死结惊吓。" },
+        "yingmai": { title: "营脉 (左脾右肝)", loc: "起肩周内侧沿伸至脚踝。前营脉经腋前线至外踝；后营脉经肩胛骨外缘、腘窝至外踝。", eff: "元气充盈之脉。循环受阻会导致腰膝酸软、下肢沉重、倦怠疲劳、股骨筋痛、膝踝无力。" },
+        "zhuangmai": { title: "壮脉", loc: "督脉左右旁开约一寸。起于会阴，经尾椎旁骨凹，过气口，上至百会。", eff: "正元之气府邸，统管阳气上升。椎间盘突出、骨刺、腰肌劳损，皆与壮脉瘀滞受阻有直接关系。" },
+        "chongmai": { title: "冲脉 / 沉积脉", loc: "任脉左右旁开约1寸。起于百会，经鼻沟、胸骨旁、脐旁至会阴与壮脉相连。", eff: "主血脉，心肺守护大脉。左伤致心慌心悸，右伤致心神不宁（胆伤）。中间僵硬多为食积（二鬼把门）。" },
+        "guanmai": { title: "关脉", loc: "脊正中线旁开约3寸。沿肩胛骨内缘向下，经奇经腰眼、坐骨结节至内踝后侧。", eff: "内脏神经放射感应之脉。主治背部双侧憋胀、抽筋、岔气，及单纯性坐骨神经痛。" },
+        "tiaosuomai": { title: "条索脉", loc: "前正中线旁开约3寸。起于肩，经乳头外缘、腹直肌外缘、至胫骨前内侧。", eff: "主三焦之气，管理大小肠正浊之气升降。受阻会致消化排泄系统质量下降（胖人此处常有硬筋）。" },
+        "daimai": { title: "带脉", loc: "平脐绕腰一周，背侧过命门，两侧过气交。", eff: "人体中枢纽带。前调节缓冲中气下行频率；后辅助腰底阳气续积。带脉不强，前影响生殖泌尿，后导致腰疼。" },
+        "huanmai": { title: "环脉", loc: "小腹部椭圆形。关元以下，耻骨1.5寸以上，左右为两侧髂前下棘。", eff: "养护精元增强体质。主生殖泌尿。防男科妇科疾病，及腰部由前向后放射痛。" },
+        "gugoumai": { title: "股沟脉", loc: "大腿根部与腹部连接处，呈V型圆周脉。起于髋骨上缘，经耻骨旁绕坐骨结节。", eff: "肾脏输送元气的通道。左主脾肾(泌尿)，右主肝肾(生殖)。瘀滞致臀部寒凉、髋骨上缘痛。" },
+        "qikou": { title: "腰骶气口", loc: "腰底4、5腰椎与骶髂结合部凹陷处（脉门之窍）。", eff: "胃肠伤腰的核心根源！中气虚弱致气口把不住门而瘀堵，阻断气血上行，引发椎体骨膜无菌发炎。" },
+        "yaoyan": { title: "四眼线 (上下内外)", loc: "骶髂关节两旁的区域：上眼角、下眼角、内眼线、外眼线。", eff: "上眼角主正气（通肺）；下眼角主元气（通肾）；内眼线主泌尿；外眼线主生殖（多因酒足饭饱房事过度引发）。" },
+        "changjing": { title: "肠经与八髎", loc: "八髎外围边缘，呈倒三角形区域。", eff: "胃肠伤腰必取之筋！疏通八髎外骨边的肠经结节，治疗腰部剧痛效果立竿见影。" },
+        "gugujin": { title: "股骨筋", loc: "骨盆髂嵴后侧骨缝里，向下延伸至股骨头大转子后侧。", eff: "营脉的重要枢纽。慢性退化和扭伤易致股骨筋痛，后期牵连膝眼、腘窝、甚至脚外撇。" },
+        "head_top": { title: "人字脉与界隔脉", loc: "头顶至前额分布。界隔脉是前额与后脑的分界线。", eff: "主头脑血脉循环。疏通此脉可缓解头痛、眩晕，以及控制血压、眼压增高。" },
+        "head_side": { title: "侧脑四区", loc: "头部侧面分为垄脊脉、脊翼脉、前厅、络丛四个区域。", eff: "垄脊脉松弛神经缓焦虑；脊翼脉治血管痉挛头痛；络丛观察内分泌与体质强弱。" },
+        "neck_back": { title: "颈后五经", loc: "颈椎向两侧排开，依次为：心经、肺胃经、肝胆经、肾阳经。", eff: "颈项内藏五经，五脏异常皆可反应于此。疏通大椎与腧窝可治后脑剜痛、小脑萎缩。" },
+        "neck_side": { title: "肾阳经", loc: "颈部侧面，胸锁乳突肌后缘。", eff: "肾气虚亏在此显相，主治耳鸣、耳背、偏头痛。" },
+        "knee_front": { title: "膝关节正面", loc: "膝盖骨(髌骨)上方三寸为上突，上方一指为寸节，下方两凹陷为膝眼。", eff: "寸节与上突若粘连板结，则中路彻底堵塞生骨刺。膝眼主关节开合伸缩。" },
+        "knee_inner": { title: "膝内侧 (众丛/地机)", loc: "膝关节内侧肌肉缝隙处（众丛），下方对应地机穴。", eff: "诊治慢性膝关节病必看此处。肿节越大越厚，病情越重。" },
+        "knee_outer": { title: "膝外侧 (谐通)", loc: "膝关节外侧及前后对通的筋脉。", eff: "观察后关节损伤及半月板损伤，极易发生扭挫伤。" },
+        "knee_back": { title: "后环 (腘窝)", loc: "膝盖正后方腘窝处，分上下中三缘。", eff: "腿部大循环的必经之路！很多膝盖前侧的病，70%是由后关节（坐骨神经牵拉）造成的。" },
+        "arm_upper": { title: "臂部上环 (锁骨窝)", loc: "腋前线、锁骨窝、胸大肌边缘。", eff: "【假性肩周炎真正的病根】！不开胸顺气、不捋通腋下淋巴结块，只揉肩膀越治越疼。" },
+        "arm_lower": { title: "臂部中下环 (心肺三经)", loc: "肘部横纹（中环）至腕部横纹（下环），其间包含肺经、心包经、心经。", eff: "强心肺操必练！刮推小臂三经可速解心慌、心悸、早搏、胸闷等心脏神经过度紧张之症。" }
+    };
+
+    function openModal(key) {
+        const data = modalData[key];
+        if(!data) return;
+        
+        document.getElementById('modalTitle').innerText = data.title;
+        document.getElementById('modalLocation').innerHTML = data.loc;
+        document.getElementById('modalEfficacy').innerHTML = data.eff;
+        
+        const imgSrc = `images/${key}.jpg`;
+        document.getElementById('modalImg').src = imgSrc;
+        
+        const modal = document.getElementById('imageModal');
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden'; 
+    }
+
+    function closeModal(event) {
+        if(!event || event.target.id === 'imageModal' || event.target.classList.contains('modal-close')) {
+            document.getElementById('imageModal').classList.remove('show');
+            document.body.style.overflow = 'auto'; 
+        }
+    }
+
+    // ===== 4. 底部心法语录 =====
+    const wisdomQuotes =[
+        "“摸脉是神与神的对话。用药看脉象，看症状是西医的思维。”",
+        "三分手，七分心。不用心，你做的只是习惯性动作。",
+        "病生于性，郁伤于情。气生百病食生灾。心门打开了，病就好了一半。",
+        "肿瘤不是敌人入侵，是隔离区。治疗不在杀灭，而在招安。",
+        "摸筋不是找粗筋，致痛的往往是骨膜上细如发丝的毫筋。",
+        "不要老说自己对。常说“我错了”的人，才是心宽之人。"
+    ];
+    function refreshWisdom() { document.getElementById('wisdomText').innerText = wisdomQuotes[Math.floor(Math.random() * wisdomQuotes.length)]; }
+    refreshWisdom();
+</script>
+
+</body>
+</html>
